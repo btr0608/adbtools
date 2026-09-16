@@ -3,10 +3,10 @@
 # 构建命令（在项目根目录执行）：
 #   venv\Scripts\pyinstaller.exe adb_gui_interactive.spec --clean
 #   或
-#   venv\Scripts\pyinstaller.exe adb_gui_interactive.py --name ADBVisualTool --noconsole --onedir --add-data "dist;dist" --icon=your_icon.ico
+#   venv\Scripts\pyinstaller.exe adb_gui_interactive.py --name aT --noconsole --onedir --add-data "dist;dist" --icon=your_icon.ico
 #
 # 打包后目录结构：
-#   ADBVisualTool.exe
+#   aT.exe
 #   dist/                          ← 运行时 adb/scrcpy 二进制 + DLLs
 #     ├── adb.exe
 #     ├── scrcpy.exe
@@ -102,6 +102,20 @@ def collect_ui_assets():
     return result
 
 
+def collect_config_files():
+    """收集 config/ 目录（commands.json 等用户自定义命令配置）。"""
+    base = os.path.abspath(SPECPATH)
+    cfg_dir = os.path.join(base, 'config')
+    result = []
+    if os.path.isdir(cfg_dir):
+        for fname in os.listdir(cfg_dir):
+            fpath = os.path.join(cfg_dir, fname)
+            if os.path.isfile(fpath):
+                result.append((fpath, os.path.join('adbtools', 'config')))
+    print(f"[INFO] 收集到 {len(result)} 个配置文件")
+    return result
+
+
 # adbtools 包的父目录：入口脚本通过 sys.path 注入上一级来 import adbtools.*
 # SPECPATH = d:/testpy/adbtools/adbtools → 父目录 d:/testpy/adbtools 才是 adbtools 包所在位置
 _package_parent = os.path.dirname(os.path.abspath(SPECPATH))
@@ -110,7 +124,7 @@ a = Analysis(
     ['adb_gui_interactive.py'],
     pathex=[_package_parent],
     binaries=collect_runtime_files(),
-    datas=collect_pyqt5_translations() + collect_ui_assets(),
+    datas=collect_pyqt5_translations() + collect_ui_assets() + collect_config_files(),
     hiddenimports=[
         # PyQt5 相关
         'PyQt5.QtCore',
@@ -123,18 +137,26 @@ a = Analysis(
         'adbtools',
         'adbtools.core',
         'adbtools.core.adb_client',
+        'adbtools.core.adb_runner',
         'adbtools.core.config',
         'adbtools.core.utils',
+        'adbtools.core.skill_plugin',
+        # adbtools core.skills 子包（多屏架构 + 技能卡片）
+        'adbtools.core.skills',
+        'adbtools.core.skills.builtin',
         # adbtools services 子包
         'adbtools.services',
         'adbtools.services.device_service',
+        'adbtools.services.display_service',
         'adbtools.services.file_service',
         'adbtools.services.logcat_service',
         'adbtools.services.scrcpy_service',
         'adbtools.services.terminal_service',
+        'adbtools.services.system_monitor_service',
         # adbtools ui 子包
         'adbtools.ui',
         'adbtools.ui.main_window',
+        'adbtools.ui.theme',
         'adbtools.ui.panels',
         'adbtools.ui.panels.file_explorer',
         'adbtools.ui.panels.logcat_panel',
@@ -174,7 +196,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,          # OneDir 关键：把 DLL 交给 COLLECT
-    name='ADBVisualTool',
+    name='aT',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -199,5 +221,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='ADBVisualTool',
+    name='aT',
 )

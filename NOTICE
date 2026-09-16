@@ -1,0 +1,128 @@
+aT (ADB Visual Tool)
+Copyright (C) 2026 aT Project Contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+================================================================================
+Third-Party Components and Licenses
+================================================================================
+
+This product includes and/or bundles the following third-party components.
+Their respective licenses are provided alongside this NOTICE or in the
+corresponding upstream projects.
+
+--------------------------------------------------------------------------------
+1. PyQt5  (https://www.riverbankcomputing.com/software/pyqt/)
+--------------------------------------------------------------------------------
+License: GNU General Public License v3 (GPL v3) / Commercial dual-license
+Copyright (c) Riverbank Computing Limited
+
+Used as the GUI framework. Distributed under GPL v3 to remain compatible with
+PyQt5's open-source license. Source code of this project is available at:
+https://github.com/<your-github-username>/aT
+
+The bundled Qt5 shared libraries (Qt5Core.dll, Qt5Gui.dll, Qt5Widgets.dll,
+etc.) are licensed under the GNU Lesser General Public License v3 (LGPL v3)
+as provided in the PyQt5 wheels from PyPI.
+
+--------------------------------------------------------------------------------
+2. scrcpy  (https://github.com/Genymobile/scrcpy)
+--------------------------------------------------------------------------------
+License: Apache License 2.0
+Copyright (C) 2018 Genymobile
+Copyright (C) 2018-2025 Romain Vimont
+
+This product bundles the following scrcpy runtime binaries for Windows:
+  - scrcpy.exe
+  - scrcpy-server
+  - scrcpy-noconsole.vbs
+  - scrcpy.png
+  - SDL3.dll        (dependency of scrcpy)
+  - avcodec-62.dll  (FFmpeg libavcodec, dependency of scrcpy)
+  - avformat-62.dll (FFmpeg libavformat, dependency of scrcpy)
+  - avutil-60.dll    (FFmpeg libavutil,    dependency of scrcpy)
+  - swresample-6.dll (FFmpeg libswresample, dependency of scrcpy)
+
+The Apache 2.0 license text is provided in LICENSE-APACHE-2.0.txt.
+
+--------------------------------------------------------------------------------
+3. Android Debug Bridge (adb)  (https://developer.android.com/tools/adb)
+--------------------------------------------------------------------------------
+License: Apache License 2.0
+Copyright (C) The Android Open Source Project
+
+This product bundles the Android SDK Platform Tools for Windows:
+  - adb.exe
+  - AdbWinApi.dll
+  - AdbWinUsbApi.dll
+  - fastboot.exe
+  - etc1tool.exe
+  - hprof-conv.exe
+  - sqlite3.exe
+  - mke2fs.exe, make_f2fs.exe (and related config files)
+  - source.properties
+
+These binaries are distributed by Google under the Apache 2.0 license
+(https://developer.android.com/tools/releases/platform-tools).
+
+--------------------------------------------------------------------------------
+4. PyInstaller  (https://pyinstaller.org/)
+--------------------------------------------------------------------------------
+License: GNU General Public License v2 (GPL v2) with a special exception
+Copyright (c) 2005-2025, PyInstaller Development Team
+
+Used as the build tool to package this application into a Windows executable.
+PyInstaller is not bundled in the runtime distribution; it is only used during
+the build process and does not impose additional licensing requirements on the
+final binary beyond GPL compatibility.
+
+--------------------------------------------------------------------------------
+5. Python  (https://www.python.org/)
+--------------------------------------------------------------------------------
+License: PSF License Agreement (BSD-compatible)
+Copyright (c) Python Software Foundation
+
+The CPython interpreter and standard library are not redistributed as part of
+this product's runtime binary, but Python is used during development. The PSF
+License is GPL-compatible.
+
+--------------------------------------------------------------------------------
+6. Pixel Font - Zpix  (https://github.com/SolidH/Zpix)
+--------------------------------------------------------------------------------
+License: SIL Open Font License 1.1 (OFL-1.1)
+Copyright (c) Zpix Project Contributors
+
+The font file ui/assets/fonts/Zpix.ttf is bundled for the pixel-art UI style
+of this application. The OFL-1.1 license permits free use, redistribution, and
+modification of the font file.
+
+--------------------------------------------------------------------------------
+7. SVG Icons  (various authors, icon sets)
+--------------------------------------------------------------------------------
+License: Multiple (MIT / CC-BY / Apache 2.0 / Public Domain)
+
+UI SVG icons under ui/assets/icons/ are sourced from various open-source icon
+sets. Where individual icons carry specific attribution requirements, those
+are noted in the corresponding icon files or upstream repositories.
+
+================================================================================
+For the full text of each license, refer to:
+  - LICENSE                              (GNU GPL v3 - project license)
+  - LICENSE-APACHE-2.0.txt               (Apache 2.0 - scrcpy / adb / Android)
+  - https://www.gnu.org/licenses/gpl-3.0.html
+  - https://www.apache.org/licenses/LICENSE-2.0
+  - https://www.gnu.org/licenses/old-licenses/lgpl-2.1-standalone.html
+  - https://opensource.org/licenses/BSD-3-Clause
+  - https://scripts.sil.org/OFL

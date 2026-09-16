@@ -1,6 +1,6 @@
-# ADB Visual Tool - Ultimate Shell 📱
+# aT (ADB Visual Tool) - Ultimate Shell 📱
 
-ADB Visual Tool 是一款基于 Python 和 PyQt5 开发的现代化、非阻塞式 ADB 可视化管理工具。它将复杂的终端命令与直观的图形界面（GUI）完美结合，专为 Android 开发者、测试工程师和逆向人员设计。
+aT（ADB Visual Tool）是一款基于 Python 和 PyQt5 开发的现代化、非阻塞式 ADB 可视化管理工具。它将复杂的终端命令与直观的图形界面（GUI）完美结合，专为 Android 开发者、测试工程师和逆向人员设计。
 
 ## ✨ 核心特性
 
@@ -95,3 +95,95 @@ ADB Visual Tool 是一款基于 Python 和 PyQt5 开发的现代化、非阻塞�
 | 模块详细设计 | `docs/module_design.md` | 每个模块的类职责、状态机、关键算法、UI 交互细节 |
 | API 接口参考 | `docs/api_reference.md` | 所有对外 API（类/方法/信号/回调签名）+ 行为契约 |
 | 开发规范 | `docs/development_standards.md` | 命名、分层边界、Qt 规范、QProcess/subprocess 硬约束、PR Checklist |
+
+---
+
+## ⚖️ 开源许可证
+
+本项目（aT / ADB Visual Tool）基于 **GNU General Public License v3 (GPL-3.0-only)** 许可证开源。
+
+- 📄 完整许可证文本见 [LICENSE](./LICENSE)
+- 📋 第三方组件清单与声明见 [NOTICE](./NOTICE)
+- 🔗 GPL v3 在线版本：<https://www.gnu.org/licenses/gpl-3.0.html>
+
+**这意味着您可以自由地：**
+- ✅ 使用、复制、修改本软件
+- ✅ 重新分发本软件及其源代码
+- ✅ 将本软件整合进其他 GPL-3.0 兼容项目中
+- ✅ 商业使用（包括销售），但必须同时提供完整源代码
+
+**前提条件：**
+- 分发本软件（或其衍生作品）时，必须以 GPL-3.0 许可证公开全部源代码
+- 必须保留原始版权声明、LICENSE 和 NOTICE 文件
+- 必须注明对源代码所做的修改
+
+---
+
+## 🧩 第三方组件声明
+
+本项目捆绑或依赖以下第三方组件，详细许可证信息见 [NOTICE](./NOTICE)：
+
+| 组件 | 用途 | 许可证 | 与本项目的兼容性 |
+|---|---|---|---|
+| [PyQt5](https://www.riverbankcomputing.com/software/pyqt/) | GUI 框架 | GPL v3 / 商业双授权 | ✅ 本项目亦为 GPL v3，兼容 |
+| [scrcpy](https://github.com/Genymobile/scrcpy) | Android 屏幕镜像 | Apache 2.0 | ✅ Apache 2.0 与 GPL v3 兼容 |
+| [Android Platform Tools (adb)](https://developer.android.com/tools/adb) | ADB 通信 | Apache 2.0 | ✅ Apache 2.0 与 GPL v3 兼容 |
+| [PyInstaller](https://pyinstaller.org/) | 打包工具（仅构建时） | GPL v2 + 特殊例外 | ✅ 仅用于构建，非运行时 |
+| [Python](https://www.python.org/) | 解释器（仅开发时） | PSF License (BSD 兼容) | ✅ 与 GPL v3 兼容 |
+| [Zpix 像素字体](https://github.com/SolidH/Zpix) | UI 字体 | OFL 1.1 | ✅ OFL 与 GPL v3 兼容 |
+
+**关于 PyQt5 与 GPL v3 的兼容性说明：**
+
+PyQt5 的开源版本采用 GPL v3 许可证，具有"传染性"——只要分发包含 PyQt5 的二进制程序，整个程序必须以 GPL v3 或兼容许可证开源源代码。这正是本项目选择 GPL v3 作为整体许可证的原因，以保证完全合规。
+
+---
+
+## 🛠️ 从源码构建
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/btr0608/adbtools.git
+cd adbtools
+
+# 2. 创建虚拟环境（Python 3.10+）
+python -m venv venv
+venv\Scripts\activate  # Windows
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 运行（开发模式）
+python adb_gui_interactive.py
+
+# 5. 打包为 Windows 可执行文件（OneDir 模式）
+venv\Scripts\pyinstaller.exe adb_gui_interactive.spec --clean -y
+# 产物输出在 dist/aT/
+```
+
+**运行时依赖二进制：**
+- `adb.exe`、`AdbWinApi.dll` 等 → 从 [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools) 下载，放到项目根目录
+- `scrcpy.exe`、`scrcpy-server`、`SDL3.dll`、`avcodec-62.dll` 等 → 从 [scrcpy Releases](https://github.com/Genymobile/scrcpy/releases) 下载 Windows 64-bit 版本，放到项目根目录
+
+---
+
+## 🤝 贡献
+
+欢迎通过 Pull Request 贡献代码。提交前请注意：
+
+1. 本项目为 GPL v3 许可证，您提交的代码也将以同一许可证开源
+2. 请遵守 [开发规范](./docs/development_standards.md) 中的命名、分层边界、Qt 规范
+3. 提交信息请遵循 Conventional Commits 规范
+4. 涉及 adb/scrcpy 调用的修改必须通过 QThread/QProcess，不可阻塞 UI
+
+---
+
+## ⚠️ 免责声明
+
+本软件仅供合法的 Android 设备管理与调试用途。使用者需：
+
+- 确保拥有对被调试设备的合法授权（如自有设备、测试设备、获得授权的他人设备）
+- 遵守所在地区的相关法律法规（如《网络安全法》《个人信息保护法》等）
+- 不得用于任何侵入他人设备、窃取数据等违法用途
+
+本软件按"现状"（AS IS）提供，不附带任何明示或暗示的担保。作者不对任何因使用本软件造成的直接或间接损失承担责任。
+
