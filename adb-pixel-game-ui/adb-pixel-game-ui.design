@@ -1,0 +1,33 @@
+{
+  "data": [
+    {
+      "id": "page-main-ui",
+      "title": "ADB 像素游戏风主界面",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1788950693000,
+      "canvasData": {
+        "x": 228,
+        "y": -24,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 862,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-ca5dd842",
+          "measuredAt": 1788954340122
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/main-ui.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": false,
+    "deviceType": "desktop",
+    "projectName": "ADB 像素游戏风 UI",
+    "designLibrary": null
+  }
+}

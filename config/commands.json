@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Root权限",
+        "cmd": "root"
+    },
+    {
+        "name": "shell",
+        "cmd": "adb shell"
+    },
+    {
+        "name": "test",
+        "cmd": "ls\ndf -h"
+    }
+]

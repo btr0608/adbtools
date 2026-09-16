@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADB Visual Tool - Pixel Game UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Pixel UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.4px;
+      line-height: 1.5;
+      image-rendering: pixelated;
+    }
+
+    /* 像素图标统一尺寸 */
+    .icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      fill: currentColor;
+    }
+    .icon-lg { width: 22px; height: 22px; }
+    .icon-sm { width: 12px; height: 12px; }
+
+    /* 像素卡片 */
+    .pixel-card {
+      background: var(--surface);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      box-shadow: var(--pixel-shadow);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .pixel-card-dark {
+      background: var(--surface-dark);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      box-shadow: var(--pixel-inset);
+      padding: 12px;
+    }
+
+    /* 像素按钮 */
+    .pixel-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--surface);
+      color: var(--text);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--border);
+      transition: transform 0.05s, box-shadow 0.05s;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .pixel-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--border);
+    }
+
+    .pixel-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
+    .pixel-btn.secondary { background: var(--secondary); color: #fff; border-color: var(--secondary-dark); }
+    .pixel-btn.accent { background: var(--accent); color: #fff; border-color: var(--accent-dark); }
+    .pixel-btn.success { background: var(--success); color: #fff; border-color: var(--success-dark); }
+    .pixel-btn.danger { background: var(--error); color: #fff; border-color: var(--error-dark); }
+    .pixel-btn.ghost { background: transparent; }
+    .pixel-btn.danger-text { color: var(--error-dark); border-color: var(--error); }
+    .pixel-btn.danger-text:hover { background: var(--error); color: #fff; }
+
+    /* 标题栏 */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-dark);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 10px 14px;
+      box-shadow: var(--pixel-shadow);
+      margin-bottom: 12px;
+    }
+
+    .titlebar h1 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--primary-dark);
+      text-shadow: 2px 2px 0 var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hp-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .hp-track {
+      width: 120px;
+      height: 14px;
+      background: var(--surface);
+      border: 2px solid var(--border-strong);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .hp-fill {
+      width: 78%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--success) 0px,
+        var(--success) 8px,
+        var(--success-dark) 8px,
+        var(--success-dark) 10px
+      );
+    }
+
+    /* 设备队伍面板 */
+    .party-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .device-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      box-shadow: var(--pixel-shadow);
+      padding: 10px;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      background: var(--primary-light);
+      border: 3px solid var(--primary-dark);
+      border-radius: 2px;
+      display: grid;
+      place-items: center;
+      color: var(--primary-dark);
+    }
+
+    .device-info strong {
+      display: block;
+      color: var(--primary-dark);
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .device-info span {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .stat-pill {
+      display: inline-block;
+      background: var(--primary-light);
+      border: 2px solid var(--primary);
+      border-radius: 2px;
+      padding: 2px 8px;
+      font-size: 10px;
+      color: var(--primary-dark);
+      margin-top: 4px;
+    }
+
+    /* 主工作区 */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 12px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 3px dashed var(--border);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 13px;
+      color: var(--primary-dark);
+    }
+
+    /* 自定义命令栏 */
+    .cmd-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .cmd-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--secondary-light);
+      border: 2px solid var(--secondary);
+      border-radius: 2px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--secondary-dark);
+      box-shadow: 2px 2px 0 var(--border);
+      cursor: pointer;
+    }
+
+    .cmd-chip:hover {
+      background: var(--secondary);
+      color: #fff;
+    }
+
+    /* 文件浏览器 */
+    .file-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pixel-input {
+      flex: 1;
+      min-width: 160px;
+      background: var(--surface);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--text);
+      box-shadow: var(--pixel-inset);
+    }
+
+    .pixel-input::placeholder { color: var(--text-light); }
+
+    .file-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: var(--surface-dark);
+      border: 2px dashed var(--border);
+      border-radius: 2px;
+    }
+
+    .file-actions-title {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-right: 6px;
+      align-self: center;
+    }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+    }
+
+    .file-item {
+      background: var(--surface);
+      border: 3px solid var(--border);
+      border-radius: 2px;
+      padding: 10px 6px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--border);
+    }
+
+    .file-item:hover {
+      border-color: var(--primary);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--border);
+    }
+
+    .file-icon { font-size: 22px; margin-bottom: 6px; color: var(--text-dim); }
+    .file-name { font-size: 10px; word-break: break-all; }
+
+    /* 终端 CRT */
+    .crt-screen {
+      background: var(--terminal-bg);
+      color: var(--terminal-text);
+      border: 4px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 12px;
+      min-height: 200px;
+      font-family: 'VT323', 'Consolas', 'Courier New', monospace;
+      font-size: 16px;
+      line-height: 1.3;
+      letter-spacing: 0.6px;
+      box-shadow: var(--pixel-inset);
+      position: relative;
+    }
+
+    .crt-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(255,255,255,0.03) 0px,
+        rgba(255,255,255,0.03) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      pointer-events: none;
+    }
+
+    .crt-prompt { color: var(--secondary); }
+    .crt-success { color: var(--success); }
+    .crt-warn { color: var(--warning); }
+
+    /* 右侧技能面板 */
+    .skill-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skill-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .skill-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 6px;
+      background: var(--surface);
+      border: 3px solid var(--border);
+      border-radius: 2px;
+      box-shadow: 2px 2px 0 var(--border);
+      cursor: pointer;
+    }
+
+    .skill-item:hover {
+      border-color: var(--primary);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--border);
+    }
+
+    .skill-item.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    .skill-icon {
+      width: 28px;
+      height: 28px;
+      color: var(--primary-dark);
+    }
+
+    .skill-item.active .skill-icon {
+      color: var(--primary-dark);
+    }
+
+    /* 技能子功能选项 */
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+
+    .option-row label {
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+
+    .pixel-select {
+      min-width: 110px;
+      background: var(--surface);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 4px 8px;
+      font-family: inherit;
+      font-size: 11px;
+      color: var(--text);
+      box-shadow: var(--pixel-inset);
+    }
+
+    .option-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .pixel-checkbox {
+      width: 16px;
+      height: 16px;
+      background: var(--surface);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      box-shadow: var(--pixel-inset);
+    }
+
+    .pixel-checkbox.checked {
+      background: var(--primary);
+      border-color: var(--primary-dark);
+      box-shadow: none;
+      position: relative;
+    }
+
+    .pixel-checkbox.checked::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 0px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 3px 3px 0;
+      transform: rotate(45deg);
+    }
+
+    .skill-name {
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    /* 底部状态栏 */
+    .footer-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-dark);
+      border: 3px solid var(--border-strong);
+      border-radius: 2px;
+      padding: 8px 12px;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .coin-counter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; }
+      .party-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 像素图标定义 -->
+  <svg width="0" height="0" style="position:absolute;">
+    <defs>
+      <symbol id="i-device" viewBox="0 0 16 16"><rect x="4" y="1" width="8" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="6" y="3" width="4" height="7" fill="currentColor"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 16 16"><path d="M2 8a6 6 0 0 1 6-6v3L13 2 8 1v3a6 6 0 0 0-6 6h2a4 4 0 0 1 4-4v3l5-3-5-1v3a4 4 0 0 0-4 4H2z" fill="currentColor"/></symbol>
+      <symbol id="i-connect" viewBox="0 0 16 16"><path d="M4 4h3v3H4zm5 5h3v3H9zm-2 2l-1-1 5-5 1 1z" fill="currentColor"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 5l3 3-3 3M7 11h5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z" fill="currentColor"/></symbol>
+      <symbol id="i-screen" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="9" fill="none" stroke="currentColor" stroke-width="2"/><rect x="6" y="12" width="4" height="2" fill="currentColor"/></symbol>
+      <symbol id="i-log" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 5h8M4 8h6M4 11h4" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-record" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="currentColor"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 16 16"><path d="M1 3h5l2 2h7v8H1z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-file" viewBox="0 0 16 16"><path d="M3 1h7l3 3v9H3z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 2v8M5 5l3-3 3 3M2 11h12v3H2z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2v8M5 8l3 3 3-3M2 12h12v2H2z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 16 16"><path d="M2 11v3h3l8-8-3-3z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2 4h12M4 4v9a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V4M6 2h4" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-play" viewBox="0 0 16 16"><path d="M4 2l10 6-10 6z" fill="currentColor"/></symbol>
+      <symbol id="i-stop" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" fill="currentColor"/></symbol>
+      <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 2l-5 6h3v6h4V8h3z" fill="currentColor"/></symbol>
+      <symbol id="i-check" viewBox="0 0 16 16"><path d="M2 8l4 4 8-8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-close" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 16 16"><path d="M9 1L4 9h3l-2 6 6-8H8z" fill="currentColor"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="titlebar">
+    <h1><svg class="icon icon-lg"><use href="#i-device"/></svg> ADB VISUAL TOOL v2.2</h1>
+    <div class="hp-bar">
+      <span>SYSTEM HP</span>
+      <div class="hp-track"><div class="hp-fill"></div></div>
+      <span>78%</span>
+    </div>
+  </header>
+
+  <!-- 设备队伍面板 -->
+  <section class="pixel-card">
+    <div class="panel-header">
+      <svg class="icon"><use href="#i-device"/></svg>
+      <h2>已连接设备 / PARTY</h2>
+    </div>
+    <div class="party-grid">
+      <div class="device-card">
+        <div class="avatar"><svg class="icon icon-lg"><use href="#i-device"/></svg></div>
+        <div class="device-info">
+          <strong>V2241A</strong>
+          <span>Android 15 · 127.0.0.1:16384</span>
+          <div class="stat-pill">LV.15 ROOT:OFF</div>
+        </div>
+        <div style="margin-left:auto; display:flex; align-items:center;">
+          <button class="pixel-btn ghost"><svg class="icon"><use href="#i-refresh"/></svg></button>
+        </div>
+      </div>
+      <div class="device-card" style="opacity:.7;">
+        <div class="avatar" style="background:var(--secondary-light); border-color:var(--secondary-dark);"><svg class="icon icon-lg"><use href="#i-bolt"/></svg></div>
+        <div class="device-info">
+          <strong>无线 ADB 槽位</strong>
+          <span>输入 IP:Port 连接</span>
+          <div class="stat-pill" style="border-color:var(--text-light); color:var(--text-dim);">EMPTY</div>
+        </div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+          <input class="pixel-input" value="192.168.0.10:5555" style="width:150px;">
+          <button class="pixel-btn primary"><svg class="icon"><use href="#i-connect"/></svg> 连接</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 自定义命令栏 -->
+  <section class="pixel-card" style="padding:10px 12px;">
+    <div class="cmd-bar">
+      <button class="pixel-btn ghost"><svg class="icon"><use href="#i-terminal"/></svg><svg class="icon"><use href="#i-plus"/></svg> 新终端</button>
+      <span class="cmd-chip"><svg class="icon icon-sm"><use href="#i-play"/></svg> 一键 Root</span>
+      <span class="cmd-chip"><svg class="icon icon-sm"><use href="#i-play"/></svg> Shell</span>
+      <span class="cmd-chip"><svg class="icon icon-sm"><use href="#i-play"/></svg> Remount</span>
+      <span class="cmd-chip"><svg class="icon icon-sm"><use href="#i-play"/></svg> Devices</span>
+      <div style="flex:1"></div>
+      <button class="pixel-btn secondary"><svg class="icon"><use href="#i-gear"/></svg> 管理命令</button>
+    </div>
+  </section>
+
+  <!-- 主工作区 -->
+  <div class="workspace">
+    <!-- 左侧：文件 + 终端 -->
+    <div class="left-column">
+      <section class="pixel-card">
+        <div class="panel-header">
+          <svg class="icon"><use href="#i-folder"/></svg>
+          <h2>文件背包 / INVENTORY</h2>
+        </div>
+        <div class="file-toolbar">
+          <button class="pixel-btn ghost"><svg class="icon"><use href="#i-up"/></svg></button>
+          <input class="pixel-input" value="/sdcard/" readonly>
+          <button class="pixel-btn ghost"><svg class="icon"><use href="#i-refresh"/></svg></button>
+          <button class="pixel-btn ghost"><svg class="icon"><use href="#i-search"/></svg></button>
+        </div>
+
+        <div class="file-grid">
+          <div class="file-item"><div class="file-icon"><svg class="icon icon-lg"><use href="#i-folder"/></svg></div><div class="file-name">Alarms</div></div>
+          <div class="file-item"><div class="file-icon"><svg class="icon icon-lg"><use href="#i-folder"/></svg></div><div class="file-name">Android</div></div>
+          <div class="file-item"><div class="file-icon"><svg class="icon icon-lg"><use href="#i-folder"/></svg></div><div class="file-name">Download</div></div>
+          <div class="file-item"><div class="file-icon"><svg class="icon icon-lg"><use href="#i-file"/></svg></div><div class="file-name">notes.txt</div></div>
+          <div class="file-item"><div class="file-icon"><svg class="icon icon-lg"><use href="#i-file"/></svg></div><div class="file-name">shot.png</div></div>
+          <div class="file-item"><div class="file-icon"><svg class="icon icon-lg"><use href="#i-file"/></svg></div><div class="file-name">app.apk</div></div>
+        </div>
+      </section>
+
+      <section class="pixel-card">
+        <div class="panel-header">
+          <svg class="icon"><use href="#i-terminal"/></svg>
+          <h2>终端 / CONSOLE</h2>
+        </div>
+        <div class="crt-screen">
+          <span class="crt-prompt">&gt; [V2241A Android 15] adb -s 127.0.0.1:16384</span> ls -l<br>
+          total 128<br>
+          drwxrwx--- 2 root sdcard_rw 4096 Jan 02 15:20 Alarms<br>
+          <span class="crt-success">[系统] 后台下载 screenshot.png 完成</span><br>
+          <span class="crt-warn">[提示] 未开启 Root 权限</span><br>
+          <span class="crt-prompt">&gt; [V2241A Android 15] adb -s 127.0.0.1:16384</span> <span class="blink">_</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- 右侧：技能 + 子功能选项 -->
+    <aside class="skill-panel">
+      <section class="pixel-card">
+        <div class="panel-header">
+          <svg class="icon"><use href="#i-bolt"/></svg>
+          <h2>技能 / SKILLS</h2>
+        </div>
+        <div class="skill-grid">
+          <div class="skill-item active">
+            <svg class="skill-icon"><use href="#i-screen"/></svg>
+            <span class="skill-name">投屏</span>
+          </div>
+          <div class="skill-item">
+            <svg class="skill-icon"><use href="#i-log"/></svg>
+            <span class="skill-name">Logcat</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 当前技能的子功能选项 -->
+      <section class="pixel-card">
+        <div class="panel-header">
+          <svg class="icon"><use href="#i-gear"/></svg>
+          <h2>投屏设置 / SCREEN OPTIONS</h2>
+        </div>
+
+        <div class="option-row">
+          <label>分辨率</label>
+          <select class="pixel-select">
+            <option>默认</option>
+            <option>1920x1080</option>
+            <option>1280x720</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label>码率</label>
+          <select class="pixel-select">
+            <option>8 Mbps</option>
+            <option>4 Mbps</option>
+            <option>2 Mbps</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label>帧率</label>
+          <select class="pixel-select">
+            <option>60 FPS</option>
+            <option>30 FPS</option>
+          </select>
+        </div>
+        <div class="option-check">
+          <span class="pixel-checkbox checked"></span>
+          <span>保持唤醒</span>
+        </div>
+        <div class="option-check">
+          <span class="pixel-checkbox"></span>
+          <span>录制屏幕</span>
+        </div>
+        <button class="pixel-btn success" style="width:100%; margin-top:12px;"><svg class="icon"><use href="#i-play"/></svg> 启动投屏</button>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="footer-hud">
+    <span><svg class="icon icon-sm"><use href="#i-check"/></svg> 设备在线 | ROOT:OFF | 投屏:OFF | 录制:OFF</span>
+    <div class="coin-counter">XP: 2048 | by Yxing</div>
+  </footer>
+
+  <style>
+    .blink { animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+</body>
+</html>

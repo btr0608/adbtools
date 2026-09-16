@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADB Visual Tool - UI 设计参考</title>
+  <style>
+    :root {
+      --bg: #F5F1E8;
+      --surface: #FAF8F2;
+      --surface-variant: #EFEBE0;
+      --border: #D8D4C8;
+      --divider: #E0DCD0;
+      --text: #4A4A48;
+      --text-secondary: #7A7A78;
+      --text-disabled: #A9A59A;
+      --primary: #7C9A92;
+      --primary-hover: #6B857E;
+      --primary-light: #E8F0ED;
+      --secondary: #9FB4CC;
+      --secondary-light: #EDF2F7;
+      --accent: #D4A373;
+      --success: #8FB996;
+      --success-hover: #7DA883;
+      --error: #E07A5F;
+      --error-hover: #C96A52;
+      --terminal-bg: #2D2C2A;
+      --terminal-text: #D8D4C8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    h1 { font-size: 20px; margin-bottom: 8px; color: var(--primary); }
+    h2 { font-size: 16px; margin-top: 24px; margin-bottom: 12px; color: var(--text); }
+    .subtitle { color: var(--text-secondary); margin-bottom: 24px; }
+
+    .mockup {
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      overflow: hidden;
+      max-width: 1200px;
+    }
+    .titlebar {
+      background: var(--surface-variant);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: bold;
+      color: var(--text);
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+    .group-label { font-weight: bold; color: var(--text-secondary); font-size: 13px; }
+    select, input[type="text"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 5px 8px;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .btn {
+      border: 2px solid transparent;
+      border-radius: 4px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover { background: var(--surface-variant); }
+    .btn-success { background: var(--success); color: white; border-color: var(--success); }
+    .btn-danger { background: var(--error); color: white; border-color: var(--error); }
+    .btn-accent { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn-icon { padding: 5px 10px; }
+
+    .cmd-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .cmd-chip {
+      background: var(--secondary-light);
+      color: var(--text);
+      border: 1px solid var(--secondary);
+      border-radius: 12px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .main-area {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      min-height: 520px;
+    }
+    .file-panel {
+      border-right: 1px solid var(--border);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .file-card {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--surface);
+    }
+    .file-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .file-row:last-child { margin-bottom: 0; }
+    .file-tree {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      flex: 1;
+      overflow: auto;
+    }
+    .tree-header, .tree-row {
+      display: grid;
+      grid-template-columns: 2fr 80px 80px 100px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--divider);
+      font-size: 13px;
+    }
+    .tree-header {
+      background: var(--surface-variant);
+      font-weight: 600;
+    }
+    .tree-row:hover { background: var(--surface-variant); }
+
+    .right-panel {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .dock-tabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 2px solid var(--border);
+    }
+    .dock-tab {
+      padding: 7px 14px;
+      background: var(--surface-variant);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .dock-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      border-bottom: 2px solid var(--primary);
+      font-weight: 600;
+    }
+    .terminal {
+      background: var(--terminal-bg);
+      color: var(--terminal-text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      flex: 1;
+      min-height: 180px;
+    }
+    .statusbar {
+      background: var(--surface-variant);
+      border-top: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary);
+      font-weight: bold;
+      font-size: 13px;
+      margin: 8px 0;
+    }
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--divider);
+    }
+
+    .palette {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .swatch {
+      width: 64px;
+      height: 64px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 4px;
+      font-size: 11px;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+  <h1>ADB Visual Tool - UI 设计参考</h1>
+  <p class="subtitle">像素化 · 柔和色调 · 游戏轻复古 · 功能图标语义化</p>
+
+  <div class="mockup">
+    <div class="titlebar">ADB Visual Tool - Version 2.2</div>
+
+    <div class="toolbar">
+      <div class="group">
+        <span class="group-label">📱 当前设备</span>
+        <select><option>✅ V2241A (127.0.0.1:16384) Android 15</option></select>
+        <button class="btn btn-secondary btn-icon">🔄 刷新</button>
+      </div>
+      <div class="group">
+        <span class="group-label">🌐 无线ADB</span>
+        <input type="text" placeholder="IP:Port" style="width: 180px;">
+        <button class="btn btn-primary">🔗 连接</button>
+      </div>
+      <div style="flex:1"></div>
+      <div class="group">
+        <span class="group-label">面板</span>
+        <button class="btn btn-secondary btn-icon">📺 投屏</button>
+        <button class="btn btn-secondary btn-icon">📋 Logcat</button>
+      </div>
+    </div>
+
+    <div class="cmd-bar">
+      <button class="btn btn-accent">➕ 新终端</button>
+      <div style="flex:1; display:flex; gap:6px; overflow:auto; padding:2px;">
+        <span class="cmd-chip">▶️ Root</span>
+        <span class="cmd-chip">▶️ shell</span>
+        <span class="cmd-chip">▶️ remount</span>
+        <span class="cmd-chip">▶️ devices</span>
+      </div>
+      <button class="btn btn-secondary">⚙️ 管理命令</button>
+    </div>
+
+    <div class="main-area">
+      <div class="file-panel">
+        <div class="file-card">
+          <div class="file-row">
+            <button class="btn btn-secondary btn-icon">⬆️ 上一级</button>
+            <input type="text" value="/sdcard/" style="flex:1;">
+            <button class="btn btn-secondary btn-icon" style="width:42px;">🔄</button>
+          </div>
+          <div class="file-row">
+            <input type="text" placeholder="输入关键词，选择范围..." style="flex:1;">
+            <select style="width:150px;"><option>/ 根目录全盘搜索</option></select>
+            <button class="btn btn-primary">🔍 搜索</button>
+          </div>
+        </div>
+        <div class="file-tree">
+          <div class="tree-header"><span>名称</span><span>类型</span><span>大小</span><span>权限</span></div>
+          <div class="tree-row"><span>📁 Alarms</span><span>Dir</span><span></span><span>drwxrwx---</span></div>
+          <div class="tree-row"><span>📁 Android</span><span>Dir</span><span></span><span>drwxrwx--x</span></div>
+          <div class="tree-row"><span>📁 Download</span><span>Dir</span><span></span><span>drwxrwxrwx</span></div>
+          <div class="tree-row"><span>📄 screenshot.png</span><span>File</span><span>2.1 MB</span><span>-rw-rw----</span></div>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="dock-tabs">
+          <div class="dock-tab active">🖥️ Terminal 1</div>
+          <div class="dock-tab">📺 投屏</div>
+          <div class="dock-tab">📋 Logcat</div>
+        </div>
+        <div class="terminal">
+          <span style="color:#569cd6;">> [V2241A Android 15] adb -s 127.0.0.1:16384 </span>ls -l<br>
+          total 128<br>
+          drwxrwx--- 2 root sdcard_rw 4096 Jan 02 15:20 Alarms<br>
+          <span style="color:#dcdcaa;">[系统] 后台下载 screenshot.png 完成</span><br>
+          <span style="color:#569cd6;">> [V2241A Android 15] adb -s 127.0.0.1:16384 </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span>设备: V2241A (127.0.0.1:16384) Android 15 | Root: 未开启 | Scrcpy: 未启动 | Logcat: 未录制</span>
+      <span>by Yxing</span>
+    </div>
+  </div>
+
+  <h2>色彩系统</h2>
+  <div class="palette">
+    <div class="swatch" style="background:#F5F1E8; color:#4A4A48;">BG</div>
+    <div class="swatch" style="background:#FAF8F2; color:#4A4A48;">Surface</div>
+    <div class="swatch" style="background:#7C9A92;">Primary</div>
+    <div class="swatch" style="background:#9FB4CC;">Secondary</div>
+    <div class="swatch" style="background:#D4A373;">Accent</div>
+    <div class="swatch" style="background:#8FB996;">Success</div>
+    <div class="swatch" style="background:#E07A5F;">Error</div>
+    <div class="swatch" style="background:#E9C46A;">Warning</div>
+    <div class="swatch" style="background:#2D2C2A;">Terminal</div>
+  </div>
+
+  <h2>图标语义</h2>
+  <ul>
+    <li>📱 设备 / 🌐 无线 / 🔗 连接 / 🔄 刷新</li>
+    <li>🖥️ 终端 / ➕ 新建 / 📺 投屏 / 📋 Logcat</li>
+    <li>📁 文件夹 / 📄 文件 / 📤 上传 / 📥 下载</li>
+    <li>✏️ 重命名 / 🗑️ 删除 / 🔍 搜索 / ⚙️ 管理</li>
+    <li>▶️ 启动 / ⏹️ 停止 / 🔴 录制</li>
+  </ul>
+
+  <h2>设计要点</h2>
+  <ul>
+    <li>全局暖米色背景，长时间使用降低眼部疲劳</li>
+    <li>组件使用 4px 小圆角 + 清晰 1-2px 边框，营造轻像素感</li>
+    <li>按钮按语义着色：Primary（绿）/ Success（绿）/ Danger（珊瑚红）/ Accent（琥珀）</li>
+    <li>终端与日志保持暗色，但使用柔和暗灰而非纯黑</li>
+    <li>状态栏分组清晰，动态消息与永久署名分区显示</li>
+  </ul>
+</body>
+</html>

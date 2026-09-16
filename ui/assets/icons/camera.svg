@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- 像素相机：取景框 + 镜头 -->
+  <rect x="4" y="8" width="24" height="18" fill="none" stroke="currentColor" stroke-width="2"/>
+  <rect x="8" y="4" width="8" height="4" fill="currentColor"/>
+  <circle cx="16" cy="17" r="5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <circle cx="16" cy="17" r="2" fill="currentColor"/>
+</svg>
