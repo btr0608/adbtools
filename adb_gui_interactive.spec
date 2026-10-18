@@ -38,7 +38,7 @@ def collect_runtime_files():
         'SDL3.dll', 'avcodec-62.dll', 'avformat-62.dll', 'avutil-60.dll',
         'swresample-6.dll',
         'disconnected.png',
-        'LICENSE.txt', 'NOTICE.txt', 'README.md',
+        'LICENSE', 'LICENSE-APACHE-2.0.txt', 'NOTICE.txt', 'README.md',
         'open_a_terminal_here.bat',
     ]
     result = []
