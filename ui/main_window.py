@@ -11,15 +11,15 @@ from PyQt5.QtCore import QEvent, QMimeData, QPoint, QRect, QSettings, Qt, QProce
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QComboBox, QDialog, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit, QListWidget, QMainWindow,
-    QMessageBox, QProgressBar, QPushButton, QSplitter, QStackedWidget,
+    QMessageBox, QPushButton, QScrollArea, QSplitter, QStackedWidget,
     QTabBar, QTabWidget, QToolButton, QVBoxLayout, QWidget
 )
 
 from ..core.adb_client import AdbClient
 from ..core.adb_runner import AdbRunner
-from ..core.config import load_commands, save_commands
+from ..core.config import APP_NAME, APP_VERSION, load_commands, save_commands
 from ..core.skill_plugin import PluginContext, SkillRegistry
-from ..core.utils import COLOR_ERROR, COLOR_SUCCESS, format_size
+from ..core.utils import COLOR_ERROR, COLOR_SUCCESS
 from ..core.skills.builtin import AppManagementSkill, LogcatSkill, ScrcpySkill, ScreenshotSkill
 from ..services.device_service import DeviceDetectorWorker, DeviceStateCheckWorker, DeviceService, DeviceInfo
 from ..services.file_service import FileService
@@ -70,9 +70,9 @@ class _WindowButton(QPushButton):
 class PixelTitleBar(QWidget):
     """无边框窗口的像素风标题栏（对应原型图顶部 titlebar）。
 
-    左侧像素标题，右侧 SYSTEM HP 血条与最小化/最大化/关闭按钮。
-    窗口拖拽、双击最大化、Aero 磁吸、边缘缩放由主窗口 nativeEvent
-    的 WM_NCHITTEST 原生处理。
+    左侧像素标题，右侧最小化/最大化/关闭按钮。
+    窗口拖拽、双击最大化、Aero 磁吸、边缘缩放由主窗口 eventFilter
+    手写实现。
     """
 
     def __init__(self, window: "AdbTool", parent=None):
@@ -94,7 +94,7 @@ class PixelTitleBar(QWidget):
         title_icon = QLabel()
         title_icon.setPixmap(IconHelper.pixmap(Icons.DEVICE, 22))
         title_icon.setStyleSheet("border: none; background: transparent;")
-        title_label = QLabel("ADB VISUAL TOOL v2.2")
+        title_label = QLabel(f"{APP_NAME} v{APP_VERSION}")
         title_label.setFont(title_font(10))
         title_label.setStyleSheet(
             f"color: {Palette.PRIMARY_DARK}; background: transparent;"
@@ -103,98 +103,6 @@ class PixelTitleBar(QWidget):
         title_row.addWidget(title_label)
         layout.addWidget(title_box)
         layout.addStretch()
-
-        # 右侧：两个血条分组（DS / ME），每组 [标签30px] [血条80px] [数字40px]
-        # 组间间距 20px；所有控件固定宽度，绝不互相挤压
-        self.hp_label = QLabel("DS")
-        self.hp_label.setFont(title_font(7))
-        self.hp_label.setStyleSheet(
-            f"color: {Palette.TEXT_DIM}; background: transparent;"
-        )
-        self.hp_label.setFixedWidth(30)
-        self.hp_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.hp_bar = QProgressBar()
-        self.hp_bar.setRange(0, 100)
-        self.hp_bar.setValue(0)
-        self.hp_bar.setTextVisible(False)
-        self.hp_bar.setFixedSize(80, 14)
-        self.hp_percent = QLabel("--")
-        self.hp_percent.setFont(title_font(7))
-        self.hp_percent.setStyleSheet(
-            f"color: {Palette.TEXT_DIM}; background: transparent;"
-        )
-        self.hp_percent.setFixedWidth(40)
-        self.hp_percent.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self._hp_bar_base = (
-            f"QProgressBar {{"
-            f" border: 2px solid {Palette.BORDER_STRONG}; border-radius: 1px;"
-            f" background-color: {Palette.BG};"
-            f"}}"
-        )
-        self._set_hp_chunk(Palette.BORDER)
-        self.hp_bar.setToolTip("未连接设备")
-
-        ds_group = QWidget()
-        ds_group.setStyleSheet("background: transparent;")
-        ds_group.setToolTip("未连接设备")
-        self._ds_group = ds_group
-        ds_layout = QHBoxLayout(ds_group)
-        ds_layout.setContentsMargins(0, 0, 0, 0)
-        ds_layout.setSpacing(4)
-        ds_layout.addWidget(self.hp_label)
-        ds_layout.addWidget(self.hp_bar)
-        ds_layout.addWidget(self.hp_percent)
-
-        # MEM 内存组
-        self.mem_label = QLabel("ME")
-        self.mem_label.setFont(title_font(7))
-        self.mem_label.setStyleSheet(
-            f"color: {Palette.TEXT_DIM}; background: transparent;"
-        )
-        self.mem_label.setFixedWidth(30)
-        self.mem_bar = QProgressBar()
-        self.mem_bar.setRange(0, 100)
-        self.mem_bar.setValue(0)
-        self.mem_bar.setTextVisible(False)
-        self.mem_bar.setFixedSize(80, 14)
-        self.mem_percent = QLabel("--")
-        self.mem_percent.setFont(title_font(7))
-        self.mem_percent.setStyleSheet(
-            f"color: {Palette.TEXT_DIM}; background: transparent;"
-        )
-        self.mem_percent.setFixedWidth(40)
-        self.mem_percent.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self._mem_bar_base = self._hp_bar_base
-        self._set_mem_chunk(Palette.BORDER)
-        self.mem_bar.setToolTip("未连接设备")
-
-        me_group = QWidget()
-        me_group.setStyleSheet("background: transparent;")
-        me_group.setToolTip("未连接设备")
-        self._me_group = me_group
-        me_layout = QHBoxLayout(me_group)
-        me_layout.setContentsMargins(0, 0, 0, 0)
-        me_layout.setSpacing(4)
-        me_layout.addWidget(self.mem_label)
-        me_layout.addWidget(self.mem_bar)
-        me_layout.addWidget(self.mem_percent)
-
-        # 右上角血条容器：固定最小宽度防止被挤
-        metrics_row = QWidget()
-        metrics_row.setStyleSheet("background: transparent;")
-        metrics_row.setMinimumWidth(280)
-        metrics_layout = QHBoxLayout(metrics_row)
-        metrics_layout.setContentsMargins(0, 0, 0, 0)
-        metrics_layout.setSpacing(20)
-        metrics_layout.addWidget(ds_group)
-        metrics_layout.addWidget(me_group)
-
-        # TMP 占位（永久隐藏，后续按需恢复）
-        self._tmp_row = QWidget()
-        self._tmp_row.setVisible(False)
-
-        # 主布局：标题 + stretch + 血条组 + 窗口按钮
-        layout.addWidget(metrics_row)
 
         # 窗口控制按钮：最小化 / 最大化 / 关闭
         self.min_btn = _WindowButton(
@@ -231,89 +139,6 @@ class PixelTitleBar(QWidget):
             Icons.WINDOW_RESTORE, 16, Palette.PRIMARY_DARK
         )
 
-    # ==================== 血条三态 ====================
-    def _set_hp_chunk(self, color: str):
-        self.hp_bar.setStyleSheet(
-            self._hp_bar_base
-            + f"QProgressBar::chunk {{ background-color: {color}; width: 4px; }}"
-        )
-
-    def _set_mem_chunk(self, color: str):
-        self.mem_bar.setStyleSheet(
-            self._mem_bar_base
-            + f"QProgressBar::chunk {{ background-color: {color}; width: 4px; }}"
-        )
-
-    def set_storage_mode(self, ok: bool, used_pct: int, used_kb: int, total_kb: int):
-        """显示 /sdcard 所在分区占用率。"""
-        if not ok:
-            self.hp_bar.setValue(0)
-            self._set_hp_chunk(Palette.BORDER)
-            self.hp_percent.setText("--")
-            tip = "未连接设备"
-            self.hp_bar.setToolTip(tip)
-            self._ds_group.setToolTip(tip)
-            return
-        self.hp_bar.setRange(0, 100)
-        self.hp_bar.setValue(max(0, min(100, used_pct)))
-        if used_pct >= 90:
-            self._set_hp_chunk(Palette.ERROR)
-        elif used_pct >= 70:
-            self._set_hp_chunk(Palette.WARNING)
-        else:
-            self._set_hp_chunk(Palette.SUCCESS)
-        self.hp_percent.setText(f"{used_pct}%")
-        tip = (
-            f"/sdcard 已用 {used_pct}%\n"
-            f"共 {format_size(total_kb * 1024)}，已用 {format_size(used_kb * 1024)}"
-        )
-        self.hp_bar.setToolTip(tip)
-        self._ds_group.setToolTip(tip)
-
-    def set_mem_mode(self, mem_pct: int, total_kb: int, avail_kb: int):
-        """显示内存占用率。"""
-        self.mem_bar.setRange(0, 100)
-        if total_kb <= 0:
-            self.mem_bar.setValue(0)
-            self._set_mem_chunk(Palette.BORDER)
-            self.mem_percent.setText("--")
-            tip = "未连接设备"
-            self.mem_bar.setToolTip(tip)
-            self._me_group.setToolTip(tip)
-            return
-        self.mem_bar.setValue(max(0, min(100, mem_pct)))
-        if mem_pct >= 85:
-            self._set_mem_chunk(Palette.ERROR)
-        elif mem_pct >= 70:
-            self._set_mem_chunk(Palette.WARNING)
-        else:
-            self._set_mem_chunk(Palette.SUCCESS)
-        used_kb = total_kb - avail_kb
-        self.mem_percent.setText(f"{mem_pct}%")
-        tip = f"已用 {format_size(used_kb * 1024)} / 共 {format_size(total_kb * 1024)}（{mem_pct}%）"
-        self.mem_bar.setToolTip(tip)
-        self._me_group.setToolTip(tip)
-
-    def set_tmp_mode(self, temp_available: bool, temp_c: float, is_emulator: bool = False):
-        """温度条暂不显示（thermal_zone 不准，后续再开）。"""
-        self._tmp_row.setVisible(False)
-
-    def set_offline_mode(self):
-        """无设备：血条置灰空槽。"""
-        tip = "未连接设备"
-        self.hp_bar.setRange(0, 100)
-        self.hp_bar.setValue(0)
-        self._set_hp_chunk(Palette.BORDER)
-        self.hp_percent.setText("--")
-        self.hp_bar.setToolTip(tip)
-        self._ds_group.setToolTip(tip)
-        self.mem_bar.setValue(0)
-        self._set_mem_chunk(Palette.BORDER)
-        self.mem_percent.setText("--")
-        self.mem_bar.setToolTip(tip)
-        self._me_group.setToolTip(tip)
-        self._tmp_row.setVisible(False)
-
     def _toggle_max(self):
         if self._win.isMaximized():
             self._win.showNormal()
@@ -334,7 +159,7 @@ class AdbTool(QMainWindow):
     def __init__(self, adb_client):
         super().__init__()
         self.adb_client = adb_client
-        self.setWindowTitle("ADB Visual Tool - Version 2.2")
+        self.setWindowTitle(f"{APP_NAME} v{APP_VERSION}")
         # 无边框窗口：像素标题栏即为窗口顶部（对齐原型图），
         # 边缘缩放 + 标题栏拖拽通过 eventFilter 手写实现（不依赖 WM_NCHITTEST）
         self.setWindowFlags(
@@ -375,19 +200,14 @@ class AdbTool(QMainWindow):
         self.device_service.set_refresh_callback(self._on_devices_found)
         self.device_service.set_connect_callback(self._on_wireless_action_done)
 
-        # 统一监控：2s 轮询，一次 adb shell 拿磁盘+内存+温度三项
-        self.system_monitor.stats_updated.connect(self._on_system_stats_updated)
-
-        self._monitor_timer = QTimer(self)
-        self._monitor_timer.setInterval(2000)
-        self._monitor_timer.timeout.connect(self._poll_system)
-        self._monitor_started = False
-
+        # 统一监控服务：保留实例供技能插件按需调用（PluginContext 注入），
+        # 标题栏血条已移除，不再做 2s 轮询（stats_updated 无人消费，不连接）
         # 设备断连检测：5s 一次 adb get-state
         self._device_state_timer = QTimer(self)
         self._device_state_timer.setInterval(5000)
         self._device_state_timer.timeout.connect(self._check_device_state)
         self._device_last_state = None  # "device" / "offline" / None
+        self._device_state_started = False
 
         # 无线 ADB 槽位状态：_wireless_target 为当前槽位中的 ip:port（None=空槽）
         self._wireless_target = None
@@ -937,9 +757,25 @@ class AdbTool(QMainWindow):
         cmd_layout.addWidget(self.add_terminal_btn)
 
         # 自定义命令芯片容器（管理命令里新增的按钮动态生成于此）
+        # 包一层横向滚动区：命令数量无上限，超出宽度时滚动而非互相挤压
         self.custom_cmd_box = QHBoxLayout()
         self.custom_cmd_box.setSpacing(8)
-        cmd_layout.addLayout(self.custom_cmd_box)
+        self.custom_cmd_box.addStretch()  # 占位，_rebuild 时重建
+
+        chips_host = QWidget()
+        chips_host.setStyleSheet("background: transparent;")
+        chips_host.setLayout(self.custom_cmd_box)
+
+        self._cmd_scroll = QScrollArea()
+        self._cmd_scroll.setWidgetResizable(True)
+        self._cmd_scroll.setWidget(chips_host)
+        self._cmd_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._cmd_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self._cmd_scroll.setFrameShape(QFrame.NoFrame)
+        self._cmd_scroll.setStyleSheet("QScrollArea { background: transparent; }")
+        self._cmd_scroll.setMinimumHeight(36)
+
+        cmd_layout.addWidget(self._cmd_scroll, 1)
         self._rebuild_custom_command_buttons()
 
         cmd_layout.addStretch()
@@ -1062,25 +898,6 @@ class AdbTool(QMainWindow):
         self.status_bar.addPermanentWidget(author_label)
         self._update_status_bar()
 
-    # ==================== 血条：统一系统监控 ====================
-    def _poll_system(self):
-        if self.get_current_serial():
-            self.system_monitor.refresh()
-
-    def _on_system_stats_updated(
-        self, disk_ok: bool, disk_pct: int, disk_used_kb: int, disk_total_kb: int,
-        mem_pct: int, mem_total_kb: int, mem_avail_kb: int,
-        temp_available: bool, temp_c: float,
-    ):
-        # 磁盘
-        if disk_ok:
-            self.title_bar.set_storage_mode(True, disk_pct, disk_used_kb, disk_total_kb)
-        # 内存
-        self.title_bar.set_mem_mode(mem_pct, mem_total_kb, mem_avail_kb)
-        # 温度（模拟器强制隐藏；真机按 thermal_zone 可用性决定）
-        is_emulator = self._current_device_info.is_emulator if self._current_device_info else False
-        self.title_bar.set_tmp_mode(temp_available, temp_c, is_emulator)
-
     # ==================== 多屏枚举回调 ====================
     def _on_displays_updated(self, displays: list):
         """DisplayService 枚举结果回调。分发给 scrcpy 面板等消费者。"""
@@ -1121,15 +938,11 @@ class AdbTool(QMainWindow):
                 self.status_bar.showMessage("设备已恢复连接")
                 self.device_stat_pill.setVisible(True)
                 self.device_stat_pill.setText("ROOT:未知")
-                self._monitor_timer.start()
-                self.system_monitor.refresh()
                 self.file_explorer.load_directory()
             else:
                 # 离线 / 无设备
                 self.status_bar.showMessage("设备离线", 5000)
                 self.device_stat_pill.setVisible(False)
-                self.title_bar.set_offline_mode()
-                self._monitor_timer.stop()
 
     def _get_startup_info(self):
         """子进程 STARTUPINFO（隐藏控制台窗口）。"""
@@ -1182,11 +995,9 @@ class AdbTool(QMainWindow):
         else:
             self.display_service.clear_cache()
 
-        # 首次检测到设备时才启动统一监控定时器，避免启动阶段无意义的 adb 调用
-        if self._current_serial and not self._monitor_started:
-            self._monitor_timer.start()
-            self._monitor_started = True
-            # 同时启动断连检测
+        # 首次检测到设备时才启动断连检测定时器，避免启动阶段无意义的 adb 调用
+        if self._current_serial and not self._device_state_started:
+            self._device_state_started = True
             self._device_state_timer.start()
         self._refresh_device_combo(devices)
         self._update_device_card(devices)
@@ -1196,12 +1007,7 @@ class AdbTool(QMainWindow):
         self._update_status_bar()
         self.refresh_dev_btn.setEnabled(True)
 
-        # 立即采集一次（2s 定时器要等）
-        if self._current_serial:
-            self.system_monitor.refresh()
-        else:
-            self.title_bar.set_offline_mode()
-            self._monitor_timer.stop()
+        if not self._current_serial:
             self._device_state_timer.stop()
             # 无设备 → 重置 registry 设备状态
             self.skill_registry.set_device(False, False)
@@ -1236,8 +1042,6 @@ class AdbTool(QMainWindow):
                 self._current_device_info.model = model
         # 通知 registry → 插件可据此过滤
         self.skill_registry.set_device(is_emulator, thermal_available)
-        # 温度条显示由 _on_system_stats_updated 根据 thermal_available 自动驱动
-        # 不在此覆盖（不要 set_tmp_mode(0.0)）
 
         # 恢复该设备专属的 QSettings（splitter/scrcpy 复选框）
         self._restore_device_settings(serial)
@@ -1282,12 +1086,11 @@ class AdbTool(QMainWindow):
         self._sync_terminal_device_labels()
         self.file_explorer.load_directory()
         self._update_status_bar()
-        # 切换设备后立即采集新设备的系统指标
+        # 切换设备后立即探测新设备类型
         if serial:
-            self.system_monitor.refresh()
             self._start_device_detector(serial)
         else:
-            self.title_bar.set_offline_mode()
+            self._device_last_state = None
 
     def _update_device_card(self, devices: list):
         if not self._current_serial:
@@ -1512,7 +1315,6 @@ class AdbTool(QMainWindow):
 
         # 停止所有定时器
         try:
-            self._monitor_timer.stop()
             self._device_state_timer.stop()
         except Exception:
             pass

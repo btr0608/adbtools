@@ -4,7 +4,7 @@ import shlex
 from collections import deque
 from typing import Callable, Optional
 
-from PyQt5.QtCore import QObject, QProcess, pyqtSignal
+from PyQt5.QtCore import QObject, QProcess, QTimer, pyqtSignal
 
 from ..core.adb_client import AdbClient
 from ..core.utils import COLOR_ERROR, COLOR_SUCCESS, COLOR_SYSTEM
@@ -25,6 +25,10 @@ class TerminalService(QObject):
         self.decoder_out = None
         self.decoder_err = None
         self.ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        # sleep 命令的定时器：kill 时需要 stop，防止结束后仍触发队列
+        self._sleep_timer: Optional[QTimer] = None
+        # 匹配独立的 sleep 行：sleep / sleep 2 / sleep 1.5（前后可有空白）
+        self._sleep_re = re.compile(r'^sleep(?:\s+([\d.]+))?\s*$', re.IGNORECASE)
 
     def bind_process(self, process: QProcess, decoder_out, decoder_err):
         self.process = process
@@ -56,6 +60,11 @@ class TerminalService(QObject):
         else:
             self.prompt_reset.emit()
 
+    def _on_sleep_done(self):
+        """sleep 计时结束：等同进程结束，继续执行队列中的下一条。"""
+        self._sleep_timer = None
+        self._on_process_finished()
+
     def run_command(self, cmd_str: str, from_external: bool = False):
         if not cmd_str:
             if self.process and self.process.state() == QProcess.Running:
@@ -81,8 +90,17 @@ class TerminalService(QObject):
             self.output_written.emit("^C\n", COLOR_SYSTEM)
             self.process.write(b'\x03')
 
+    def send_ctrl_d(self):
+        """Ctrl+D = EOF：交互式 adb shell 中退出 shell（等同输入 exit）。"""
+        if self.process and self.process.state() == QProcess.Running:
+            self.output_written.emit("^D\n", COLOR_SYSTEM)
+            self.process.write(b'\x04')
+
     def kill_process(self):
         self.cmd_queue.clear()
+        if self._sleep_timer is not None:
+            self._sleep_timer.stop()
+            self._sleep_timer = None
         if self.process and self.process.state() == QProcess.Running:
             self.process.kill()
             self.system_msg.emit("[强制结束] 进程及后续队列已被手动终止！", COLOR_ERROR)
@@ -99,6 +117,18 @@ class TerminalService(QObject):
         should_echo = from_external if is_first else True
         if should_echo:
             self.system_msg.emit(cmd_str + '\n', COLOR_SYSTEM)
+
+        # ── sleep 拦截：QTimer 等待后继续队列，不产生 adb 进程、无设备也可用 ──
+        m = self._sleep_re.match(cmd_str)
+        if m:
+            seconds = float(m.group(1)) if m.group(1) else 1.0
+            seconds = max(0.05, min(3600.0, seconds))
+            self.system_msg.emit(f"[等待 {seconds:g}s]", COLOR_SYSTEM)
+            self._sleep_timer = QTimer(self)
+            self._sleep_timer.setSingleShot(True)
+            self._sleep_timer.timeout.connect(self._on_sleep_done)
+            self._sleep_timer.start(int(seconds * 1000))
+            return
 
         try:
             cmd_parts = shlex.split(cmd_str.replace('\\', '\\\\') if os.name == 'nt' else cmd_str)

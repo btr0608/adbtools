@@ -1,14 +1,53 @@
 import os
+import sys
 import json
+import shutil
 from typing import List, Dict
 
-# 优先使用项目目录下的 config 文件夹，fallback 到用户主目录
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_CONFIG_DIR = os.path.join(_PROJECT_ROOT, "config")
-if os.path.isdir(_CONFIG_DIR) and os.access(_CONFIG_DIR, os.W_OK):
-    CONFIG_FILE = os.path.join(_CONFIG_DIR, "commands.json")
-else:
-    CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".adb_visual_cmds.json")
+# ── 应用标识（版本号从这里统一管理） ──
+APP_NAME = "aT"
+APP_VERSION = "1.0.0"
+
+
+def _app_config_dir() -> str:
+    """用户配置目录：%APPDATA%/aT（Windows），随用户资料走，与程序目录解耦。
+
+    配置放用户目录的原因：打包分发时同事替换整个程序文件夹不会丢命令；
+    程序目录在 Program Files 等位置时也可能没有写权限。
+    """
+    appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
+    return os.path.join(appdata, APP_NAME)
+
+
+# 用户配置文件（唯一写入位置）
+CONFIG_FILE = os.path.join(_app_config_dir(), "commands.json")
+
+
+def _legacy_config_candidates() -> List[str]:
+    """旧版本可能存放 commands.json 的位置，按优先级排列（用于一次性迁移）。"""
+    candidates = []
+    # 1) 开发环境 / 旧打包版：程序目录下的 config/commands.json
+    #    frozen 时 __file__ 位于 _internal/adbtools/core/，_PROJECT_ROOT 即 _internal/
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidates.append(os.path.join(project_root, "config", "commands.json"))
+    # 2) 更早版本的用户主目录散文件
+    candidates.append(os.path.join(os.path.expanduser("~"), ".adb_visual_cmds.json"))
+    return candidates
+
+
+def _migrate_legacy_config():
+    """首次运行时把旧位置的命令配置迁移到用户目录（仅在目标不存在时执行）。"""
+    if os.path.exists(CONFIG_FILE):
+        return
+    for legacy in _legacy_config_candidates():
+        try:
+            if os.path.isfile(legacy):
+                os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+                shutil.copyfile(legacy, CONFIG_FILE)
+                return
+        except OSError:
+            continue
+
 
 DEFAULT_COMMANDS = [
     {"name": "Root权限", "cmd": "root"},
@@ -19,6 +58,7 @@ DEFAULT_COMMANDS = [
 
 
 def load_commands() -> List[Dict[str, str]]:
+    _migrate_legacy_config()
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:

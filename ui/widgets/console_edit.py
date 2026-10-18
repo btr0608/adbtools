@@ -11,6 +11,7 @@ from ..theme import Fonts, terminal_style
 class ConsoleEdit(QTextEdit):
     execute_cmd_signal = pyqtSignal(str)
     ctrl_c_signal = pyqtSignal()
+    ctrl_d_signal = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -136,6 +137,10 @@ class ConsoleEdit(QTextEdit):
 
         if mod & Qt.ControlModifier and key == Qt.Key_C:
             self.copy() if cursor.hasSelection() else self.ctrl_c_signal.emit()
+            return
+
+        if mod & Qt.ControlModifier and key == Qt.Key_D:
+            self.ctrl_d_signal.emit()
             return
 
         if mod & Qt.ControlModifier and key == Qt.Key_V:

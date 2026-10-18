@@ -46,6 +46,7 @@ class TerminalTab(QWidget):
         self.terminal = ConsoleEdit()
         self.terminal.execute_cmd_signal.connect(self.terminal_service.run_command)
         self.terminal.ctrl_c_signal.connect(self.terminal_service.send_ctrl_c)
+        self.terminal.ctrl_d_signal.connect(self.terminal_service.send_ctrl_d)
         self.main_layout.addLayout(self.top_layout)
         self.main_layout.addWidget(self.terminal)
 

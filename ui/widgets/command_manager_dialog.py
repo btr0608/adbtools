@@ -130,6 +130,25 @@ class CommandManagerDialog(QDialog):
         self.down_btn.clicked.connect(self.move_down)
         self.help_btn.clicked.connect(self.show_help)
 
+        # 输入变化时同步模式提示：让用户始终清楚当前是"编辑已有"还是"新增"
+        self.name_input.textChanged.connect(self._on_input_changed)
+        self.cmd_input.textChanged.connect(self._on_input_changed)
+
+    def _on_input_changed(self):
+        """输入框内容变化时的模式提示：选中项存在且内容与其一致 → 编辑模式。"""
+        idx = self.list_widget.currentRow()
+        if 0 <= idx < len(self.commands):
+            name, cmd = self._get_inputs()
+            entry = self.commands[idx]
+            if name == entry.get("name", "") and cmd == entry.get("cmd", ""):
+                self._set_status(
+                    f"编辑模式：正在修改第 {idx + 1} 项「{entry.get('name', '')}」，"
+                    f"改完点「保存修改」生效",
+                    STATUS_SUCCESS_QSS,
+                )
+                return
+        self._set_status("新增模式：填写内容后点「新增」追加为新命令", STATUS_WARNING_QSS)
+
     def show_help(self):
         QMessageBox.information(
             self, "帮助说明",
@@ -174,14 +193,37 @@ class CommandManagerDialog(QDialog):
             self._set_status("请输入 ADB 指令", STATUS_ERROR_QSS)
             self.cmd_input.setFocus()
             return
+
+        # 修复：选中某项后未做任何修改就点"新增"，此前会原样复制一条。
+        # 现在判定为"想新增但输入框还是旧内容"→ 清空进入新增模式。
+        idx = self.list_widget.currentRow()
+        if 0 <= idx < len(self.commands):
+            entry = self.commands[idx]
+            if name == entry.get("name", "") and cmd == entry.get("cmd", ""):
+                self.name_input.clear()
+                self.cmd_input.clear()
+                self.name_input.setFocus()
+                self._set_status(
+                    "输入框仍是所选命令的原内容，已清空。请输入新命令后再次点「新增」",
+                    STATUS_WARNING_QSS,
+                )
+                return
+
         if self._find_duplicate(name) >= 0:
             self._set_status(f"名称「{name}」已存在，请使用不同名称", STATUS_WARNING_QSS)
             return
         self.commands.append({"name": name, "cmd": cmd})
         self.update_list()
-        idx = len(self.commands) - 1
-        self.list_widget.setCurrentRow(idx)
+        new_idx = len(self.commands) - 1
+        self.list_widget.setCurrentRow(new_idx)
         # 清空输入框，方便用户连续新增
+        self.name_input.clear()
+        self.cmd_input.clear()
+        # setCurrentRow 会触发 load_selected 把新项载入输入框，与"连续新增"冲突，
+        # 这里再次清空并清除选中，让输入框保持空白的新增状态
+        self.list_widget.blockSignals(True)
+        self.list_widget.clearSelection()
+        self.list_widget.blockSignals(False)
         self.name_input.clear()
         self.cmd_input.clear()
         self._set_status(f"已新增「{name}」（输入框已清空，可继续新增）", STATUS_SUCCESS_QSS)
